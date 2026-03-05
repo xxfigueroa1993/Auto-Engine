@@ -1970,65 +1970,6 @@ def reset_password():
     return jsonify({"ok": True})
 
 
-# ── CONTENT ENGINE ────────────────────────────────────────────────
-import threading
-import sys
-import os
-
-@app.route("/api/content-engine/run", methods=["POST","OPTIONS"])
-def content_engine_run():
-    """Manually trigger the content engine. Protected by admin key."""
-    if request.method == "OPTIONS":
-        return jsonify({"ok":True})
-    
-    auth = request.headers.get("X-Admin-Key","") or (request.get_json(silent=True) or {}).get("admin_key","")
-    if auth != os.environ.get("ADMIN_KEY",""):
-        return jsonify({"error":"Unauthorized"}), 401
-
-    def run_async():
-        try:
-            sys.path.insert(0, os.path.dirname(__file__))
-            from content_engine import run_engine
-            run_engine()
-        except Exception as e:
-            print(f"Content engine error: {e}")
-
-    thread = threading.Thread(target=run_async, daemon=True)
-    thread.start()
-    return jsonify({"ok": True, "message": "Content engine started in background"})
-
-
-@app.route("/api/content-engine/log", methods=["GET"])
-def content_engine_log():
-    """View content engine run history. Protected by admin key."""
-    auth = request.args.get("admin_key","")
-    if auth != os.environ.get("ADMIN_KEY",""):
-        return jsonify({"error":"Unauthorized"}), 401
-    try:
-        with open("/tmp/content_engine_log.json","r") as f:
-            log = json.load(f)
-        return jsonify({"ok": True, "runs": log[::-1]})  # Most recent first
-    except:
-        return jsonify({"ok": True, "runs": [], "message": "No runs yet"})
-
-
-@app.route("/api/content-engine/status", methods=["GET"])
-def content_engine_status():
-    """Check content engine last run status."""
-    auth = request.args.get("admin_key","")
-    if auth != os.environ.get("ADMIN_KEY",""):
-        return jsonify({"error":"Unauthorized"}), 401
-    try:
-        with open("/tmp/content_engine_log.json","r") as f:
-            log = json.load(f)
-        last = log[-1] if log else None
-        return jsonify({"ok": True, "last_run": last, "total_runs": len(log)})
-    except:
-        return jsonify({"ok": True, "last_run": None, "total_runs": 0})
-
-
-# ── DAILY SCHEDULER — runs content engine at 9am UTC ──────────────
-def start_daily_scheduler():
     import time
     def scheduler():
         while True:
