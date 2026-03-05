@@ -3744,3 +3744,45 @@ body{background:#f0ebe8;min-height:100vh;display:flex;align-items:center;justify
   <a href="/login" class="btn btn-outline">Sign In to Subscribe Later</a>
 </div>
 </body></html>"""
+# ── CONTENT ENGINE ────────────────────────────────────────────────
+import threading, sys
+
+@app.route("/api/content-engine/run", methods=["POST","OPTIONS"])
+def content_engine_run():
+    if request.method == "OPTIONS":
+        return jsonify({"ok":True})
+    auth = request.headers.get("X-Admin-Key","") or (request.get_json(silent=True) or {}).get("admin_key","")
+    if auth != os.environ.get("ADMIN_KEY","srd_admin_2024"):
+        return jsonify({"error":"Unauthorized"}), 401
+    def run_async():
+        try:
+            from content_engine import run_engine
+            run_engine()
+        except Exception as e:
+            print(f"Content engine error: {e}")
+    threading.Thread(target=run_async, daemon=True).start()
+    return jsonify({"ok": True, "message": "Content engine started"})
+
+@app.route("/api/content-engine/log", methods=["GET"])
+def content_engine_log():
+    auth = request.args.get("admin_key","")
+    if auth != os.environ.get("ADMIN_KEY","srd_admin_2024"):
+        return jsonify({"error":"Unauthorized"}), 401
+    try:
+        with open("/tmp/content_engine_log.json","r") as f:
+            log = json.load(f)
+        return jsonify({"ok": True, "runs": log[::-1]})
+    except:
+        return jsonify({"ok": True, "runs": [], "message": "No runs yet"})
+
+@app.route("/api/content-engine/status", methods=["GET"])
+def content_engine_status():
+    auth = request.args.get("admin_key","")
+    if auth != os.environ.get("ADMIN_KEY","srd_admin_2024"):
+        return jsonify({"error":"Unauthorized"}), 401
+    try:
+        with open("/tmp/content_engine_log.json","r") as f:
+            log = json.load(f)
+        return jsonify({"ok": True, "last_run": log[-1] if log else None, "total_runs": len(log)})
+    except:
+        return jsonify({"ok": True, "last_run": None, "total_runs": 0})
