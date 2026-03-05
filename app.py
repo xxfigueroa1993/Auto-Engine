@@ -3744,3 +3744,6 @@ body{background:#f0ebe8;min-height:100vh;display:flex;align-items:center;justify
   <a href="/login" class="btn btn-outline">Sign In to Subscribe Later</a>
 </div>
 </body></html>"""
+
+from engine_routes import register_engine_routes
+register_engine_routes(app)
