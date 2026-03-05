@@ -3744,10 +3744,3 @@ body{background:#f0ebe8;min-height:100vh;display:flex;align-items:center;justify
   <a href="/login" class="btn btn-outline">Sign In to Subscribe Later</a>
 </div>
 </body></html>"""
-@app.route("/api/content-engine/status", methods=["GET"])
-def content_engine_status():
-    auth = request.args.get("admin_key","")
-    if auth != os.environ.get("ADMIN_KEY","srd_admin_2024"):
-        return jsonify({"error":"Unauthorized"}), 401
-    return jsonify({"ok": True, "last_run": None, "total_runs": 0})
-
