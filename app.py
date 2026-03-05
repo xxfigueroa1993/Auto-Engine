@@ -1989,8 +1989,6 @@ def reset_password():
     thread.start()
     print("✅ Daily content engine scheduler started (runs at 9am UTC)")
 
-# Start scheduler when app boots
-start_daily_scheduler()
 
 @app.route("/api/ping", methods=["GET"])
 def ping():
