@@ -8,12 +8,19 @@ def register_engine_routes(app):
         try:
             time.sleep(90)
             print("🚀 Content engine firing...")
-            import sys, importlib
-            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-            ce = importlib.import_module("content_engine")
+            import sys, importlib.util
+            # Find content_engine.py relative to this file
+            base = os.path.dirname(os.path.abspath(__file__))
+            ce_path = os.path.join(base, "content_engine.py")
+            print(f"📂 Looking for engine at: {ce_path}")
+            print(f"📂 File exists: {os.path.exists(ce_path)}")
+            spec = importlib.util.spec_from_file_location("content_engine", ce_path)
+            ce = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(ce)
             ce.run_engine()
         except Exception as e:
             print(f"Auto-run error (non-fatal): {e}")
+            import traceback; traceback.print_exc()
             # Never crash Flask
 
     t = threading.Thread(target=auto_run, daemon=True)
