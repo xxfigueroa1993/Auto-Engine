@@ -1996,6 +1996,36 @@ import glob
 
 BLOG_DIR = "/tmp/srd_blog"
 
+@app.route("/api/pinterest-trends")
+def pinterest_trends():
+    """Scrape and return trending Pinterest hair content."""
+    import re, urllib.request, urllib.parse, random
+    queries = ["hair care routine", "hair growth tips", "damaged hair repair", "curly hair", "hair loss treatment"]
+    query = random.choice(queries)
+    pins = []
+    try:
+        url = f"https://pinterest.com/search/pins/?q={urllib.parse.quote(query)}&rs=typed"
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9"
+        })
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            html = resp.read().decode("utf-8", errors="ignore")
+        # Extract image URLs and titles
+        images = re.findall(r'"url"\s*:\s*"(https://i\.pinimg\.com/[^"]+736[^"]+\.jpg)"', html)
+        titles = re.findall(r'"title"\s*:\s*"([^"]{15,100})"', html)
+        hair_titles = [t for t in titles if any(kw in t.lower() for kw in
+            ["hair", "curl", "scalp", "growth", "damage", "frizz", "moisture", "routine"])]
+        for i, img in enumerate(images[:12]):
+            pins.append({
+                "image": img,
+                "title": hair_titles[i] if i < len(hair_titles) else query,
+                "link": f"https://auto-engine.onrender.com/blog"
+            })
+    except Exception as e:
+        print(f"Pinterest scrape error: {e}")
+    return jsonify({"ok": True, "pins": pins, "query": query})
+
 @app.route("/blog")
 def blog_index():
     try:
@@ -2033,7 +2063,15 @@ body{{font-family:'Jost',sans-serif;background:#f0ebe8;color:#0d0906;min-height:
 header{{text-align:center;padding:60px 24px 40px;background:#fff;border-bottom:1px solid rgba(193,163,162,0.2)}}
 header h1{{font-family:'Cormorant Garamond',serif;font-size:42px;font-style:italic;color:#0d0906}}
 header p{{font-size:13px;color:rgba(0,0,0,0.4);margin-top:8px;letter-spacing:0.08em}}
-.container{{max-width:800px;margin:0 auto;padding:40px 24px}}
+.container{{max-width:900px;margin:0 auto;padding:40px 24px}}
+.section-label{{font-size:11px;color:#c1a3a2;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:12px}}
+.section-title{{font-family:'Cormorant Garamond',serif;font-size:30px;font-style:italic;margin-bottom:24px;color:#0d0906}}
+.pin-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:52px}}
+.pin-card{{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);cursor:pointer;transition:transform 0.2s}}
+.pin-card:hover{{transform:translateY(-3px)}}
+.pin-card img{{width:100%;height:190px;object-fit:cover;display:block}}
+.pin-card .pin-title{{padding:10px 12px;font-size:11px;color:rgba(0,0,0,0.55);line-height:1.4}}
+.pin-loading{{text-align:center;padding:40px;color:rgba(0,0,0,0.3);font-size:13px;grid-column:1/-1}}
 .post-card{{background:#fff;border-radius:16px;margin-bottom:20px;transition:transform 0.2s;box-shadow:0 2px 12px rgba(0,0,0,0.06)}}
 .post-card:hover{{transform:translateY(-2px)}}
 .post-card a{{display:block;padding:28px 32px;text-decoration:none;color:inherit}}
@@ -2050,8 +2088,27 @@ footer a{{color:#c1a3a2;text-decoration:none}}
   <h1>Hair Care Journal</h1>
   <p>Expert tips, routines and advice from SupportRD</p>
 </header>
-<div class="container">{cards}</div>
+<div class="container">
+  <div class="section-label">&#10022; Trending in hair care</div>
+  <div class="section-title">What's Inspiring Us This Week</div>
+  <div class="pin-grid" id="pin-grid"><div class="pin-loading">Loading trending hair inspiration...</div></div>
+  <div class="section-label">&#10022; Expert guides</div>
+  <div class="section-title">Hair Care Journal</div>
+  {cards}
+</div>
 <footer><a href="https://supportrd.com">← Back to SupportRD</a> &nbsp;·&nbsp; <a href="https://ai-hair-advisor.onrender.com">Try Aria AI →</a></footer>
+<script>
+fetch('/api/pinterest-trends')
+  .then(function(r){{return r.json();}})
+  .then(function(d){{
+    var grid=document.getElementById('pin-grid');
+    if(!d.pins||!d.pins.length){{grid.innerHTML='';return;}}
+    grid.innerHTML=d.pins.map(function(p){{
+      return '<div class="pin-card" onclick="window.location=\\'/blog\\'"><img src="'+p.image+'" alt="'+p.title+'" loading="lazy" onerror="this.closest(\\'.pin-card\\').remove()"><div class="pin-title">'+p.title+'</div></div>';
+    }}).join('');
+  }})
+  .catch(function(){{document.getElementById('pin-grid').innerHTML='';}});
+</script>
 </body></html>"""
 
 
@@ -2154,6 +2211,22 @@ Disallow: /admin
 
 Sitemap: https://auto-engine.onrender.com/sitemap.xml
 """, mimetype="text/plain")
+
+@app.route("/sitemap.xml")
+def sitemap():
+    urls = ["https://auto-engine.onrender.com", "https://auto-engine.onrender.com/blog"]
+    try:
+        with open(BLOG_DIR + "/index.json","r") as f:
+            posts = json.load(f)
+        for p in posts:
+            urls.append("https://auto-engine.onrender.com/blog/" + p["handle"])
+    except:
+        pass
+    lines = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>", "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"]
+    for url in urls:
+        lines.append("  <url><loc>" + url + "</loc></url>")
+    lines.append("</urlset>")
+    return "\n".join(lines), 200, {"Content-Type": "application/xml"}
 
 @app.route("/google65f6d985572e55c5.html")
 def google_verify():
