@@ -3,10 +3,13 @@ from flask import request, jsonify
 
 def register_engine_routes(app):
 
-    # Auto-run engine 90 seconds after Flask starts
+    # Auto-run engine at a random time (1-18 hours after deploy)
     def auto_run():
         try:
-            time.sleep(90)
+            import random
+            delay = random.randint(3600, 18 * 3600)
+            print(f"⏰ Content engine will auto-run in {delay//3600}h {(delay%3600)//60}m")
+            time.sleep(delay)
             print("🚀 Content engine firing...")
             import sys, importlib.util
             # Find content_engine.py relative to this file
