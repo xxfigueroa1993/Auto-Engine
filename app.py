@@ -2106,6 +2106,55 @@ footer a{{color:#c1a3a2;text-decoration:none}}
 <footer><a href="https://supportrd.com">SupportRD</a> &nbsp;·&nbsp; <a href="/blog">More Articles</a></footer>
 </body></html>"""
 
+
+@app.route("/sitemap.xml")
+def sitemap():
+    import glob
+    BLOG_DIR = "/tmp/srd_blog"
+    base_url = "https://auto-engine.onrender.com"
+    
+    urls = []
+    
+    # Blog index
+    urls.append(f"""  <url>
+    <loc>{base_url}/blog</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>""")
+    
+    # Individual posts
+    try:
+        with open(f"{BLOG_DIR}/index.json","r") as f:
+            posts = json.load(f)
+        for p in posts:
+            date = p.get("date","")[:10]
+            urls.append(f"""  <url>
+    <loc>{base_url}/blog/{p["handle"]}</loc>
+    <lastmod>{date}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>""")
+    except:
+        pass
+
+    xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{chr(10).join(urls)}
+</urlset>"""
+    
+    return Response(xml, mimetype="application/xml")
+
+
+@app.route("/robots.txt")
+def robots():
+    return Response(f"""User-agent: *
+Allow: /blog
+Disallow: /api
+Disallow: /admin
+
+Sitemap: https://auto-engine.onrender.com/sitemap.xml
+""", mimetype="text/plain")
+
 @app.route("/api/ping", methods=["GET"])
 def ping():
     return jsonify({"ok": True, "status": "awake"})
