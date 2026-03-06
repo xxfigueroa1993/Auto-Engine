@@ -1,40 +1,25 @@
-import json, os, threading
+import json, os, threading, time
 from flask import request, jsonify
 
-def keep_alive():
-    """Ping server every 14 min to prevent Render free tier sleep."""
-    import time, urllib.request
-    url = os.environ.get("RENDER_EXTERNAL_URL", "")
-    if not url:
-        return
-    def ping():
-        while True:
-            time.sleep(14 * 60)
-            try:
-                urllib.request.urlopen(url + "/api/ping", timeout=10)
-                print("✅ Keep-alive ping sent")
-            except Exception as e:
-                print(f"⚠️ Keep-alive failed: {e}")
-    threading.Thread(target=ping, daemon=True).start()
-    print("✅ Keep-alive started")
-
 def register_engine_routes(app):
-    # Auto-run engine on startup with delay so Flask starts first
-    import time, random
+
+    # Auto-run engine 90 seconds after Flask starts
     def auto_run():
-        time.sleep(30)  # Wait 30s for Flask to fully start
-        keep_alive()    # Start keep-alive after Flask is up
-        delay = 60      # Then wait 1 minute before running engine
-        print(f"⏰ Content engine will auto-run in 1 minute")
-        time.sleep(delay)
+        time.sleep(90)
+        print("🚀 Content engine firing...")
         try:
-            from content_engine import run_engine
-            run_engine()
+            import sys
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            import importlib
+            ce = importlib.import_module("content_engine")
+            ce.run_engine()
         except Exception as e:
             print(f"Auto-run error: {e}")
-    threading.Thread(target=auto_run, daemon=True).start()
-    print("✅ Content engine auto-run scheduled")
+            import traceback
+            traceback.print_exc()
 
+    threading.Thread(target=auto_run, daemon=True).start()
+    print("✅ Content engine scheduled (90s)")
 
     @app.route("/api/content-engine/run", methods=["POST","OPTIONS"])
     def content_engine_run():
@@ -45,8 +30,10 @@ def register_engine_routes(app):
             return jsonify({"error":"Unauthorized"}), 401
         def run_async():
             try:
-                from content_engine import run_engine
-                run_engine()
+                import importlib, sys
+                sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                ce = importlib.import_module("content_engine")
+                ce.run_engine()
             except Exception as e:
                 print(f"Content engine error: {e}")
         threading.Thread(target=run_async, daemon=True).start()
