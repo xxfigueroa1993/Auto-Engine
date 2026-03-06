@@ -1990,6 +1990,122 @@ def reset_password():
     print("✅ Daily content engine scheduler started (runs at 9am UTC)")
 
 
+
+# ── PUBLIC BLOG ───────────────────────────────────────────────────
+import glob
+
+BLOG_DIR = "/tmp/srd_blog"
+
+@app.route("/blog")
+def blog_index():
+    try:
+        with open(f"{BLOG_DIR}/index.json","r") as f:
+            posts = json.load(f)
+    except:
+        posts = []
+    
+    cards = ""
+    for p in posts:
+        date = p.get("date","")[:10]
+        cards += f"""
+        <article class="post-card">
+          <a href="/blog/{p['handle']}">
+            <h2>{p['title']}</h2>
+            <p class="meta">{p.get('meta','')}</p>
+            <span class="date">{date}</span>
+          </a>
+        </article>"""
+
+    if not cards:
+        cards = '<p class="empty">No posts yet — check back soon.</p>'
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hair Care Journal — SupportRD</title>
+<meta name="description" content="Expert hair care tips, routines and advice from SupportRD.">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{font-family:'Jost',sans-serif;background:#f0ebe8;color:#0d0906;min-height:100vh}}
+header{{text-align:center;padding:60px 24px 40px;background:#fff;border-bottom:1px solid rgba(193,163,162,0.2)}}
+header h1{{font-family:'Cormorant Garamond',serif;font-size:42px;font-style:italic;color:#0d0906}}
+header p{{font-size:13px;color:rgba(0,0,0,0.4);margin-top:8px;letter-spacing:0.08em}}
+.container{{max-width:800px;margin:0 auto;padding:40px 24px}}
+.post-card{{background:#fff;border-radius:16px;margin-bottom:20px;transition:transform 0.2s;box-shadow:0 2px 12px rgba(0,0,0,0.06)}}
+.post-card:hover{{transform:translateY(-2px)}}
+.post-card a{{display:block;padding:28px 32px;text-decoration:none;color:inherit}}
+.post-card h2{{font-family:'Cormorant Garamond',serif;font-size:24px;color:#0d0906;margin-bottom:8px;line-height:1.3}}
+.post-card .meta{{font-size:13px;color:rgba(0,0,0,0.45);line-height:1.6;margin-bottom:12px}}
+.post-card .date{{font-size:11px;color:#c1a3a2;letter-spacing:0.08em}}
+.empty{{text-align:center;color:rgba(0,0,0,0.3);padding:60px;font-size:14px}}
+footer{{text-align:center;padding:40px;font-size:12px;color:rgba(0,0,0,0.3)}}
+footer a{{color:#c1a3a2;text-decoration:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Hair Care Journal</h1>
+  <p>Expert tips, routines and advice from SupportRD</p>
+</header>
+<div class="container">{cards}</div>
+<footer><a href="https://supportrd.com">← Back to SupportRD</a> &nbsp;·&nbsp; <a href="https://ai-hair-advisor.onrender.com">Try Aria AI →</a></footer>
+</body></html>"""
+
+
+@app.route("/blog/<handle>")
+def blog_post(handle):
+    try:
+        with open(f"{BLOG_DIR}/{handle}.json","r") as f:
+            post = json.load(f)
+    except:
+        return "<h2>Post not found</h2>", 404
+
+    date = post.get("date","")[:10]
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{post['title']} — SupportRD</title>
+<meta name="description" content="{post.get('meta','')}">
+<link rel="canonical" href="https://ai-hair-advisor.onrender.com/blog/{handle}">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{font-family:'Jost',sans-serif;background:#f0ebe8;color:#0d0906}}
+header{{text-align:center;padding:50px 24px 30px;background:#fff;border-bottom:1px solid rgba(193,163,162,0.2)}}
+header a{{font-size:12px;color:#c1a3a2;text-decoration:none;letter-spacing:0.08em}}
+.container{{max-width:720px;margin:0 auto;padding:48px 24px}}
+.post-date{{font-size:11px;color:#c1a3a2;letter-spacing:0.1em;margin-bottom:16px}}
+.post-body{{background:#fff;border-radius:20px;padding:48px;box-shadow:0 2px 20px rgba(0,0,0,0.06);line-height:1.8;font-size:15px}}
+.post-body h1{{font-family:'Cormorant Garamond',serif;font-size:36px;font-style:italic;margin-bottom:24px;line-height:1.2}}
+.post-body h2{{font-family:'Cormorant Garamond',serif;font-size:24px;margin:32px 0 12px}}
+.post-body p{{margin-bottom:16px;color:rgba(0,0,0,0.75)}}
+.post-body a{{color:#c1a3a2}}
+.cta{{background:#c1a3a2;color:#fff;text-align:center;padding:32px;border-radius:16px;margin-top:32px}}
+.cta h3{{font-family:'Cormorant Garamond',serif;font-size:24px;font-style:italic;margin-bottom:8px}}
+.cta a{{display:inline-block;margin-top:16px;padding:12px 28px;background:#fff;color:#c1a3a2;border-radius:30px;text-decoration:none;font-size:11px;letter-spacing:0.12em;text-transform:uppercase}}
+footer{{text-align:center;padding:32px;font-size:12px;color:rgba(0,0,0,0.3)}}
+footer a{{color:#c1a3a2;text-decoration:none}}
+</style>
+</head>
+<body>
+<header><a href="/blog">← Hair Care Journal</a></header>
+<div class="container">
+  <div class="post-date">{date}</div>
+  <div class="post-body">{post['html']}</div>
+  <div class="cta">
+    <h3>Get your personalized hair routine</h3>
+    <p style="font-size:13px;opacity:0.9">Tell Aria about your hair and get expert advice tailored to you.</p>
+    <a href="https://ai-hair-advisor.onrender.com">Chat with Aria Free →</a>
+  </div>
+</div>
+<footer><a href="https://supportrd.com">SupportRD</a> &nbsp;·&nbsp; <a href="/blog">More Articles</a></footer>
+</body></html>"""
+
 @app.route("/api/ping", methods=["GET"])
 def ping():
     return jsonify({"ok": True, "status": "awake"})
