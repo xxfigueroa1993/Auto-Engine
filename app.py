@@ -2287,21 +2287,7 @@ Disallow: /admin
 Sitemap: https://auto-engine.onrender.com/sitemap.xml
 """, mimetype="text/plain")
 
-@app.route("/sitemap.xml")
-def sitemap():
-    urls = ["https://auto-engine.onrender.com", "https://auto-engine.onrender.com/blog"]
-    try:
-        with open(BLOG_DIR + "/index.json","r") as f:
-            posts = json.load(f)
-        for p in posts:
-            urls.append("https://auto-engine.onrender.com/blog/" + p["handle"])
-    except:
-        pass
-    lines = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>", "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"]
-    for url in urls:
-        lines.append("  <url><loc>" + url + "</loc></url>")
-    lines.append("</urlset>")
-    return "\n".join(lines), 200, {"Content-Type": "application/xml"}
+
 
 @app.route("/google65f6d985572e55c5.html")
 def google_verify():
