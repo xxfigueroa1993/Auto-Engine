@@ -178,81 +178,50 @@ def parse_content(raw):
     }
 
 
-# ── SHOPIFY BLOG PUBLISHER ─────────────────────────────────────────
-def publish_to_shopify(content):
-    """Publish article to Shopify blog."""
-    if not SHOPIFY_ADMIN_TOKEN:
-        print("⚠️  No Shopify token — skipping publish")
-        return None
+# ── BLOG PUBLISHER — saves to server ──────────────────────────────
+BLOG_DIR = "/tmp/srd_blog"
 
-    # Get or create blog
-    blog_id = get_or_create_blog("Hair Care Journal")
-    if not blog_id:
-        print("❌ Could not get blog ID")
-        return None
+def publish_to_server(content):
+    """Save article as HTML file on the server."""
+    import os
+    os.makedirs(BLOG_DIR, exist_ok=True)
 
-    article = {
-        "article": {
-            "title":        content["title"],
-            "body_html":    content["html"],
-            "summary_html": content["meta"],
-            "handle":       content["handle"],
-            "tags":         "hair care, hair tips, SupportRD",
-            "published":    True,
-            "metafields": [
-                {
-                    "namespace": "seo",
-                    "key":       "description",
-                    "value":     content["meta"],
-                    "type":      "single_line_text_field"
-                }
-            ]
-        }
+    # Save individual post
+    filename = f"{content['handle']}.json"
+    post = {
+        "title":   content["title"],
+        "handle":  content["handle"],
+        "html":    content["html"],
+        "meta":    content["meta"],
+        "date":    datetime.datetime.utcnow().isoformat(),
     }
+    with open(f"{BLOG_DIR}/{filename}", "w") as f:
+        json.dump(post, f)
 
-    url = f"https://{SHOPIFY_STORE}/admin/api/2024-01/blogs/{blog_id}/articles.json"
-    headers = {
-        "Content-Type":          "application/json",
-        "X-Shopify-Access-Token": SHOPIFY_ADMIN_TOKEN
-    }
+    # Update index
+    index_path = f"{BLOG_DIR}/index.json"
+    try:
+        with open(index_path, "r") as f:
+            index = json.load(f)
+    except:
+        index = []
 
-    resp = requests.post(url, json=article, headers=headers, timeout=15)
-    if resp.status_code in (200, 201):
-        data = resp.json()
-        article_id = data["article"]["id"]
-        article_url = f"{STORE_URL}/blogs/hair-care-journal/{content['handle']}"
-        print(f"✅ Published to Shopify: {article_url}")
-        return article_url
-    else:
-        print(f"❌ Shopify publish failed: {resp.status_code} {resp.text[:200]}")
-        return None
+    # Add to index if not already there
+    handles = [p["handle"] for p in index]
+    if content["handle"] not in handles:
+        index.insert(0, {
+            "title":  content["title"],
+            "handle": content["handle"],
+            "meta":   content["meta"],
+            "date":   post["date"],
+        })
+    index = index[:90]  # Keep last 90 posts
+    with open(index_path, "w") as f:
+        json.dump(index, f)
 
-
-def get_or_create_blog(title):
-    """Get existing blog ID or create new one."""
-    url = f"https://{SHOPIFY_STORE}/admin/api/2024-01/blogs.json"
-    headers = {"X-Shopify-Access-Token": SHOPIFY_ADMIN_TOKEN}
-    
-    resp = requests.get(url, headers=headers, timeout=10)
-    print(f"📋 GET blogs status: {resp.status_code}")
-    if resp.status_code == 200:
-        blogs = resp.json().get("blogs", [])
-        print(f"📋 Found {len(blogs)} existing blogs")
-        for blog in blogs:
-            if blog["title"].lower() == title.lower():
-                return blog["id"]
-    else:
-        print(f"❌ GET blogs error: {resp.text[:200]}")
-    
-    # Create new blog
-    resp = requests.post(url, 
-        json={"blog": {"title": title, "commentable": "moderate"}},
-        headers={**headers, "Content-Type": "application/json"},
-        timeout=10)
-    print(f"📋 POST blog status: {resp.status_code} — {resp.text[:200]}")
-    if resp.status_code in (200, 201):
-        return resp.json()["blog"]["id"]
-    return None
+    url = f"https://ai-hair-advisor.onrender.com/blog/{content['handle']}"
+    print(f"✅ Published to server: {url}")
+    return url
 
 
 # ── PINTEREST PUBLISHER ────────────────────────────────────────────
@@ -453,7 +422,7 @@ def run_engine():
 
         # 3. Publish to Shopify blog
         print("\n🛍️  Publishing to Shopify...")
-        shopify_url = publish_to_shopify(content)
+        shopify_url = publish_to_server(content)
 
         # 4. Post to Pinterest
         if shopify_url:
