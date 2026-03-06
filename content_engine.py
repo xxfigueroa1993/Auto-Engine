@@ -384,28 +384,8 @@ Hope this helps! Happy to answer questions in the comments.
 
 # ── TOPIC DISCOVERY ────────────────────────────────────────────────
 def get_todays_topic():
-    """Rotate through seed topics + discover trending ones."""
+    """Rotate through seed topics daily."""
     day = datetime.datetime.now().timetuple().tm_yday
-    
-    # Try to find trending topic via Reddit
-    try:
-        resp = requests.get(
-            "https://www.reddit.com/r/Hair/hot.json?limit=5",
-            headers={"User-Agent": "SupportRD-ContentBot/1.0"},
-            timeout=8
-        )
-        if resp.status_code == 200:
-            posts = resp.json()["data"]["children"]
-            for post in posts:
-                title = post["data"]["title"].lower()
-                # Filter for relevant hair topics
-                if any(kw in title for kw in ["hair", "growth", "damage", "scalp", "curl", "frizz", "loss"]):
-                    print(f"📈 Trending topic found: {post['data']['title']}")
-                    return post["data"]["title"]
-    except Exception as e:
-        print(f"⚠️  Trend discovery failed: {e}")
-
-    # Fall back to seed topic rotation
     topic = SEED_TOPICS[day % len(SEED_TOPICS)]
     print(f"📋 Using seed topic: {topic}")
     return topic
