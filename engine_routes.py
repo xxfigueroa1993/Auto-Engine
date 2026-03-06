@@ -19,11 +19,12 @@ def keep_alive():
     print("✅ Keep-alive started")
 
 def register_engine_routes(app):
-    keep_alive()
-    # Auto-run engine on startup with random delay (1-6 hours)
+    # Auto-run engine on startup with delay so Flask starts first
     import time, random
     def auto_run():
-        delay = 60  # 1 minute
+        time.sleep(30)  # Wait 30s for Flask to fully start
+        keep_alive()    # Start keep-alive after Flask is up
+        delay = 60      # Then wait 1 minute before running engine
         print(f"⏰ Content engine will auto-run in 1 minute")
         time.sleep(delay)
         try:
