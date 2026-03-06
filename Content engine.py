@@ -445,6 +445,11 @@ def run_engine():
     reddit_ok   = False
     error       = None
 
+    print(f"🚀 Engine starting...")
+    print(f"   ANTHROPIC_API_KEY set: {bool(ANTHROPIC_API_KEY)}")
+    print(f"   SHOPIFY_ADMIN_TOKEN set: {bool(SHOPIFY_ADMIN_TOKEN)}")
+    print(f"   SHOPIFY_STORE: {SHOPIFY_STORE}")
+
     try:
         # 1. Get today's topic
         topic = get_todays_topic()
