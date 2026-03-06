@@ -111,7 +111,7 @@ Format the blog post in clean HTML (just the body content, no <html> or <head> t
 Start with <h1> for the title."""
 
     payload = json.dumps({
-        "model": "claude-sonnet-4-20250514",
+        "model": "claude-haiku-4-5-20251001",
         "max_tokens": 2000,
         "messages": [{"role": "user", "content": prompt}]
     }).encode("utf-8")
@@ -127,9 +127,14 @@ Start with <h1> for the title."""
         method="POST"
     )
 
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        result = json.loads(resp.read().decode("utf-8"))
-        return result["content"][0]["text"].strip()
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+            return result["content"][0]["text"].strip()
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8")
+        print(f"❌ API Error {e.code}: {body}")
+        raise
 
 
 def parse_content(raw):
