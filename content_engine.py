@@ -357,9 +357,41 @@ Hope this helps! Happy to answer questions in the comments.
 
 
 # ── TOPIC DISCOVERY ────────────────────────────────────────────────
+def scrape_pinterest_trends():
+    """Scrape trending hair topics from Pinterest public search."""
+    queries = ["hair care", "hair growth", "damaged hair", "curly hair routine", "hair loss"]
+    import random, re
+    query = random.choice(queries)
+    try:
+        url = f"https://pinterest.com/search/pins/?q={urllib.parse.quote(query)}&rs=typed"
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9"
+        })
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            html = resp.read().decode("utf-8", errors="ignore")
+        # Extract pin titles from meta tags and script data
+        titles = re.findall(r'"title"\s*:\s*"([^"]{20,120})"', html)
+        hair_titles = [t for t in titles if any(kw in t.lower() for kw in 
+            ["hair", "curl", "scalp", "growth", "damage", "frizz", "moisture", "routine", "treatment"])]
+        if hair_titles:
+            topic = random.choice(hair_titles[:10])
+            print(f"📌 Pinterest trend found: {topic}")
+            return topic
+    except Exception as e:
+        print(f"⚠️ Pinterest scrape failed: {e}")
+    return None
+
 def get_todays_topic():
-    """Rotate through seed topics daily."""
+    """Get trending topic from Pinterest or fall back to seed topics."""
     day = datetime.datetime.now().timetuple().tm_yday
+    
+    # Try Pinterest trends first
+    trend = scrape_pinterest_trends()
+    if trend:
+        return trend
+    
+    # Fall back to seed topic rotation
     topic = SEED_TOPICS[day % len(SEED_TOPICS)]
     print(f"📋 Using seed topic: {topic}")
     return topic
