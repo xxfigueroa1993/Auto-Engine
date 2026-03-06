@@ -2187,6 +2187,25 @@ loadEngineLog();
 </script>
 </body></html>"""
 
+@app.route("/api/debug-shopify2", methods=["GET"])
+def debug_shopify2():
+    import requests
+    store = os.environ.get("SHOPIFY_STORE","")
+    token = os.environ.get("SHOPIFY_ADMIN_TOKEN","")
+    url = f"https://{store}/admin/api/2024-01/blogs.json"
+    headers = {"X-Shopify-Access-Token": token}
+    try:
+        resp = requests.get(url, headers=headers, timeout=10)
+        return jsonify({
+            "store": store,
+            "token_prefix": token[:12] if token else "NOT SET",
+            "token_length": len(token),
+            "status": resp.status_code,
+            "response": resp.text[:300]
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
 @app.route("/api/debug-shopify", methods=["GET"])
 def debug_shopify():
     import urllib.request as urlreq
