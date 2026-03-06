@@ -1996,6 +1996,75 @@ import glob
 
 BLOG_DIR = "/tmp/srd_blog"
 
+@app.route("/api/hair-trends")
+def hair_trends():
+    """Scrape trending hair content from multiple platforms."""
+    import re, urllib.request, urllib.parse, random, threading
+    results = []
+    lock = threading.Lock()
+
+    def scrape_reddit():
+        try:
+            url = "https://www.reddit.com/r/Hair+Haircare+NaturalHair+curlyhair/hot.json?limit=12"
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=8) as r:
+                data = json.loads(r.read().decode())
+            posts = data["data"]["children"]
+            for p in posts[:8]:
+                d = p["data"]
+                title = d.get("title","")
+                if any(kw in title.lower() for kw in ["hair","curl","scalp","growth","damage","frizz","moisture"]):
+                    img = d.get("thumbnail","")
+                    if img and img.startswith("http"):
+                        with lock:
+                            results.append({"title": title, "image": img, "source": "reddit", "link": "https://reddit.com" + d.get("permalink","")})
+        except Exception as e:
+            print(f"Reddit scrape error: {e}")
+
+    def scrape_pinterest():
+        try:
+            queries = ["hair care routine", "natural hair", "curly hair tips", "hair growth"]
+            query = random.choice(queries)
+            url = f"https://pinterest.com/search/pins/?q={urllib.parse.quote(query)}"
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"})
+            with urllib.request.urlopen(req, timeout=8) as r:
+                html = r.read().decode("utf-8", errors="ignore")
+            images = re.findall(r'"url":"(https://i\.pinimg\.com/[^"]+736[^"]+\.jpg)"', html)
+            titles = re.findall(r'"title":"([^"]{15,100})"', html)
+            hair_titles = [t for t in titles if any(kw in t.lower() for kw in ["hair","curl","scalp","growth","damage","frizz"])]
+            for i, img in enumerate(images[:6]):
+                with lock:
+                    results.append({"title": hair_titles[i] if i < len(hair_titles) else query, "image": img, "source": "pinterest", "link": "https://auto-engine.onrender.com/blog"})
+        except Exception as e:
+            print(f"Pinterest scrape error: {e}")
+
+    def scrape_tumblr():
+        try:
+            tags = ["haircare", "naturalhair", "curlyhair", "hairtransformation"]
+            tag = random.choice(tags)
+            url = f"https://www.tumblr.com/tagged/{tag}"
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=8) as r:
+                html = r.read().decode("utf-8", errors="ignore")
+            images = re.findall(r'"url":"(https://[^"]+tumblr[^"]+_500\.jpg)"', html)
+            for img in images[:4]:
+                with lock:
+                    results.append({"title": tag.replace("_"," ").title() + " inspiration", "image": img, "source": "tumblr", "link": "https://auto-engine.onrender.com/blog"})
+        except Exception as e:
+            print(f"Tumblr scrape error: {e}")
+
+    # Run all scrapers in parallel
+    threads = [
+        threading.Thread(target=scrape_reddit),
+        threading.Thread(target=scrape_pinterest),
+        threading.Thread(target=scrape_tumblr),
+    ]
+    for t in threads: t.start()
+    for t in threads: t.join(timeout=10)
+
+    random.shuffle(results)
+    return jsonify({"ok": True, "items": results[:15]})
+
 @app.route("/api/pinterest-trends")
 def pinterest_trends():
     """Scrape and return trending Pinterest hair content."""
@@ -2098,13 +2167,19 @@ footer a{{color:#c1a3a2;text-decoration:none}}
 </div>
 <footer><a href="https://supportrd.com">← Back to SupportRD</a> &nbsp;·&nbsp; <a href="https://ai-hair-advisor.onrender.com">Try Aria AI →</a></footer>
 <script>
-fetch('/api/pinterest-trends')
+var sourceColors={{'reddit':'#ff4500','pinterest':'#e60023','tumblr':'#35465c'}};
+fetch('/api/hair-trends')
   .then(function(r){{return r.json();}})
   .then(function(d){{
     var grid=document.getElementById('pin-grid');
-    if(!d.pins||!d.pins.length){{grid.innerHTML='';return;}}
-    grid.innerHTML=d.pins.map(function(p){{
-      return '<div class="pin-card" onclick="window.location=\\'/blog\\'"><img src="'+p.image+'" alt="'+p.title+'" loading="lazy" onerror="this.closest(\\'.pin-card\\').remove()"><div class="pin-title">'+p.title+'</div></div>';
+    if(!d.items||!d.items.length){{grid.innerHTML='';return;}}
+    grid.innerHTML=d.items.map(function(p){{
+      var color=sourceColors[p.source]||'#c1a3a2';
+      return '<div class="pin-card" onclick="window.open(\''+p.link+'\',\'_blank\')">'+
+        '<img src="'+p.image+'" alt="'+p.title+'" loading="lazy" onerror="this.closest(\\'.pin-card\\').remove()">'+
+        '<div class="pin-title">'+p.title+
+        '<span style="display:block;margin-top:4px;font-size:9px;color:'+color+';text-transform:uppercase;letter-spacing:0.08em">'+p.source+'</span>'+
+        '</div></div>';
     }}).join('');
   }})
   .catch(function(){{document.getElementById('pin-grid').innerHTML='';}});
