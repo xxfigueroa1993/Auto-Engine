@@ -2155,6 +2155,10 @@ Disallow: /admin
 Sitemap: https://auto-engine.onrender.com/sitemap.xml
 """, mimetype="text/plain")
 
+@app.route("/google65f6d985572e55c5.html")
+def google_verify():
+    return "google-site-verification: google65f6d985572e55c5.html"
+
 @app.route("/api/ping", methods=["GET"])
 def ping():
     return jsonify({"ok": True, "status": "awake"})
