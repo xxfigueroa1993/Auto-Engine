@@ -1,12 +1,30 @@
 import json, os, threading
 from flask import request, jsonify
 
+def keep_alive():
+    """Ping server every 14 min to prevent Render free tier sleep."""
+    import time, urllib.request
+    url = os.environ.get("RENDER_EXTERNAL_URL", "")
+    if not url:
+        return
+    def ping():
+        while True:
+            time.sleep(14 * 60)
+            try:
+                urllib.request.urlopen(url + "/api/ping", timeout=10)
+                print("✅ Keep-alive ping sent")
+            except Exception as e:
+                print(f"⚠️ Keep-alive failed: {e}")
+    threading.Thread(target=ping, daemon=True).start()
+    print("✅ Keep-alive started")
+
 def register_engine_routes(app):
+    keep_alive()
     # Auto-run engine on startup with random delay (1-6 hours)
     import time, random
     def auto_run():
-        delay = 600  # 10 minutes
-        print(f"⏰ Content engine will auto-run in 10 minutes")
+        delay = 60  # 1 minute
+        print(f"⏰ Content engine will auto-run in 1 minute")
         time.sleep(delay)
         try:
             from content_engine import run_engine
