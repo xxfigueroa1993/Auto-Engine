@@ -5,20 +5,20 @@ def register_engine_routes(app):
 
     # Auto-run engine 90 seconds after Flask starts
     def auto_run():
-        time.sleep(90)
-        print("🚀 Content engine firing...")
         try:
-            import sys
+            time.sleep(90)
+            print("🚀 Content engine firing...")
+            import sys, importlib
             sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-            import importlib
             ce = importlib.import_module("content_engine")
             ce.run_engine()
         except Exception as e:
-            print(f"Auto-run error: {e}")
-            import traceback
-            traceback.print_exc()
+            print(f"Auto-run error (non-fatal): {e}")
+            # Never crash Flask
 
-    threading.Thread(target=auto_run, daemon=True).start()
+    t = threading.Thread(target=auto_run, daemon=True)
+    t.daemon = True
+    t.start()
     print("✅ Content engine scheduled (90s)")
 
     @app.route("/api/content-engine/run", methods=["POST","OPTIONS"])
