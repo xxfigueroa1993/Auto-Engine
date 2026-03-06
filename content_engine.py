@@ -382,15 +382,36 @@ def scrape_pinterest_trends():
         print(f"⚠️ Pinterest scrape failed: {e}")
     return None
 
+def scrape_reddit_trends():
+    """Scrape trending hair topics from Reddit."""
+    try:
+        url = "https://www.reddit.com/r/Hair+Haircare+NaturalHair+curlyhair/hot.json?limit=10"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=8) as r:
+            data = json.loads(r.read().decode())
+        posts = data["data"]["children"]
+        for p in posts:
+            title = p["data"].get("title","")
+            if len(title) > 20 and any(kw in title.lower() for kw in ["hair","curl","scalp","growth","damage","frizz","moisture","routine"]):
+                print(f"🤖 Reddit trend found: {title}")
+                return title
+    except Exception as e:
+        print(f"⚠️ Reddit scrape failed: {e}")
+    return None
+
 def get_todays_topic():
-    """Get trending topic from Pinterest or fall back to seed topics."""
+    """Get trending topic from multiple platforms or fall back to seed topics."""
+    import random
     day = datetime.datetime.now().timetuple().tm_yday
-    
-    # Try Pinterest trends first
-    trend = scrape_pinterest_trends()
-    if trend:
-        return trend
-    
+
+    # Try platforms in random order
+    scrapers = [scrape_pinterest_trends, scrape_reddit_trends]
+    random.shuffle(scrapers)
+    for scraper in scrapers:
+        trend = scraper()
+        if trend:
+            return trend
+
     # Fall back to seed topic rotation
     topic = SEED_TOPICS[day % len(SEED_TOPICS)]
     print(f"📋 Using seed topic: {topic}")
