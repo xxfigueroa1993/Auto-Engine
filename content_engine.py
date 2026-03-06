@@ -234,17 +234,22 @@ def get_or_create_blog(title):
     headers = {"X-Shopify-Access-Token": SHOPIFY_ADMIN_TOKEN}
     
     resp = requests.get(url, headers=headers, timeout=10)
+    print(f"📋 GET blogs status: {resp.status_code}")
     if resp.status_code == 200:
         blogs = resp.json().get("blogs", [])
+        print(f"📋 Found {len(blogs)} existing blogs")
         for blog in blogs:
             if blog["title"].lower() == title.lower():
                 return blog["id"]
+    else:
+        print(f"❌ GET blogs error: {resp.text[:200]}")
     
     # Create new blog
     resp = requests.post(url, 
         json={"blog": {"title": title, "commentable": "moderate"}},
         headers={**headers, "Content-Type": "application/json"},
         timeout=10)
+    print(f"📋 POST blog status: {resp.status_code} — {resp.text[:200]}")
     if resp.status_code in (200, 201):
         return resp.json()["blog"]["id"]
     return None
