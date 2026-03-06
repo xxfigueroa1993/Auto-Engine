@@ -5,8 +5,8 @@ def register_engine_routes(app):
     # Auto-run engine on startup with random delay (1-6 hours)
     import time, random
     def auto_run():
-        delay = random.randint(60, 6 * 60 * 60)  # 1 min to 6 hours
-        print(f"⏰ Content engine will auto-run in {delay//60} minutes")
+        delay = 600  # 10 minutes
+        print(f"⏰ Content engine will auto-run in 10 minutes")
         time.sleep(delay)
         try:
             from content_engine import run_engine
