@@ -1970,24 +1970,37 @@ def reset_password():
     return jsonify({"ok": True})
 
 
-    import time
+# ── CONTENT ENGINE SCHEDULER (3x daily: 9am, 2pm, 7pm UTC) ──────────────────
+def _start_content_scheduler():
+    import time as _t
+    # Run hours UTC: 9, 14, 19
+    RUN_HOURS = {9, 14, 19}
+    _fired = set()  # track which hours we've fired today
+
     def scheduler():
         while True:
             now = datetime.datetime.utcnow()
-            # Run at 9:00 AM UTC daily
-            if now.hour == 9 and now.minute == 0:
-                print("⏰ Daily content engine trigger...")
+            key = (now.date(), now.hour)
+            if now.hour in RUN_HOURS and now.minute == 0 and key not in _fired:
+                _fired.add(key)
+                # Prune old keys (keep only today)
+                today = now.date()
+                for k in list(_fired):
+                    if k[0] != today:
+                        _fired.discard(k)
+                print(f"⏰ Content engine trigger at {now.hour}:00 UTC...")
                 try:
                     from content_engine import run_engine
                     run_engine()
                 except Exception as e:
                     print(f"Scheduled engine error: {e}")
-                time.sleep(61)  # Prevent double-run within same minute
-            else:
-                time.sleep(30)
-    thread = threading.Thread(target=scheduler, daemon=True)
-    thread.start()
-    print("✅ Daily content engine scheduler started (runs at 9am UTC)")
+            _t.sleep(30)
+
+    t = threading.Thread(target=scheduler, daemon=True)
+    t.start()
+    print("✅ Content engine scheduler started (runs at 9am, 2pm, 7pm UTC)")
+
+_start_content_scheduler()
 
 
 
