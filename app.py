@@ -1970,37 +1970,24 @@ def reset_password():
     return jsonify({"ok": True})
 
 
-# ── CONTENT ENGINE SCHEDULER (3x daily: 9am, 2pm, 7pm UTC) ──────────────────
-def _start_content_scheduler():
-    import time as _t
-    # Run hours UTC: 9, 14, 19
-    RUN_HOURS = {9, 14, 19}
-    _fired = set()  # track which hours we've fired today
-
+    import time
     def scheduler():
         while True:
             now = datetime.datetime.utcnow()
-            key = (now.date(), now.hour)
-            if now.hour in RUN_HOURS and now.minute == 0 and key not in _fired:
-                _fired.add(key)
-                # Prune old keys (keep only today)
-                today = now.date()
-                for k in list(_fired):
-                    if k[0] != today:
-                        _fired.discard(k)
-                print(f"⏰ Content engine trigger at {now.hour}:00 UTC...")
+            # Run at 9:00 AM UTC daily
+            if now.hour == 9 and now.minute == 0:
+                print("⏰ Daily content engine trigger...")
                 try:
                     from content_engine import run_engine
                     run_engine()
                 except Exception as e:
                     print(f"Scheduled engine error: {e}")
-            _t.sleep(30)
-
-    t = threading.Thread(target=scheduler, daemon=True)
-    t.start()
-    print("✅ Content engine scheduler started (runs at 9am, 2pm, 7pm UTC)")
-
-_start_content_scheduler()
+                time.sleep(61)  # Prevent double-run within same minute
+            else:
+                time.sleep(30)
+    thread = threading.Thread(target=scheduler, daemon=True)
+    thread.start()
+    print("✅ Daily content engine scheduler started (runs at 9am UTC)")
 
 
 
@@ -2108,13 +2095,33 @@ def pinterest_trends():
         print(f"Pinterest scrape error: {e}")
     return jsonify({"ok": True, "pins": pins, "query": query})
 
+HAIR_ADVISOR_URL = "https://ai-hair-advisor.onrender.com"
+
+def fetch_blog_posts():
+    import urllib.request as urlreq
+    try:
+        req = urlreq.Request(f"{HAIR_ADVISOR_URL}/api/blog-posts",
+                             headers={"User-Agent": "auto-engine/1.0"})
+        with urlreq.urlopen(req, timeout=8) as r:
+            return json.loads(r.read().decode())
+    except Exception as e:
+        print(f"Blog fetch error: {e}")
+        return []
+
+def fetch_blog_post(handle):
+    import urllib.request as urlreq
+    try:
+        req = urlreq.Request(f"{HAIR_ADVISOR_URL}/api/blog-post/{handle}",
+                             headers={"User-Agent": "auto-engine/1.0"})
+        with urlreq.urlopen(req, timeout=8) as r:
+            return json.loads(r.read().decode())
+    except Exception as e:
+        print(f"Blog post fetch error: {e}")
+        return None
+
 @app.route("/blog")
 def blog_index():
-    try:
-        with open(f"{BLOG_DIR}/index.json","r") as f:
-            posts = json.load(f)
-    except:
-        posts = []
+    posts = fetch_blog_posts()
     
     cards = ""
     for p in posts:
@@ -2202,10 +2209,8 @@ fetch('/api/hair-trends')
 
 @app.route("/blog/<handle>")
 def blog_post(handle):
-    try:
-        with open(f"{BLOG_DIR}/{handle}.json","r") as f:
-            post = json.load(f)
-    except:
+    post = fetch_blog_post(handle)
+    if not post:
         return "<h2>Post not found</h2>", 404
 
     date = post.get("date","")[:10]
@@ -2269,8 +2274,7 @@ def sitemap():
     
     # Individual posts
     try:
-        with open(f"{BLOG_DIR}/index.json","r") as f:
-            posts = json.load(f)
+        posts = fetch_blog_posts()
         for p in posts:
             date = p.get("date","")[:10]
             urls.append(f"""  <url>
