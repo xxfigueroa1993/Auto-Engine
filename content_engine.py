@@ -108,6 +108,7 @@ NAV_CSS = """
 body{{font-family:Inter,sans-serif;background:#f0ebe8;color:#0d0906;min-height:100vh}}
 
 :root{{
+  /* Exact values from theme :root */
   --font-body--family:Inter,sans-serif;
   --font-body--weight:400;
   --font-heading--family:"Barlow Condensed",sans-serif;
@@ -147,6 +148,7 @@ body{{font-family:Inter,sans-serif;background:#f0ebe8;color:#0d0906;min-height:1
   --menu-font-2xl--size:1.75rem;
   --menu-font-2xl--line-height:calc(1.1 + 0.5 * min(16 / 28));
 
+  /* Resolved menu vars (type_font_primary_link=heading, type_font_primary_size=sm, type_case_primary_link=uppercase) */
   --menu-top-level-font-family:var(--font-heading--family);
   --menu-top-level-font-weight:var(--font-heading--weight);
   --menu-top-level-font-style:normal;
@@ -165,12 +167,14 @@ body{{font-family:Inter,sans-serif;background:#f0ebe8;color:#0d0906;min-height:1
   --header-height:56px;
 }}
 
+/* ── sticky header ── */
 #header-component{{
   position:sticky;top:0;z-index:1000;
   background:#fff;
   border-bottom:1px solid var(--color-border);
 }}
 
+/* ── 3-col grid — header-row.liquid ── */
 .header{{
   display:grid;
   grid-template-columns:auto auto 1fr;
@@ -186,6 +190,7 @@ body{{font-family:Inter,sans-serif;background:#f0ebe8;color:#0d0906;min-height:1
 .header__column--center{{justify-content:flex-start;height:100%;}}
 .header__column--right{{justify-content:flex-end;}}
 
+/* ── logo: Inter 400, shop.name text ── */
 .header-logo{{
   display:flex;height:100%;align-items:center;
   text-decoration:none;
@@ -199,6 +204,7 @@ body{{font-family:Inter,sans-serif;background:#f0ebe8;color:#0d0906;min-height:1
 .header-logo:hover{{text-decoration:none;color:var(--color-foreground);}}
 .header-logo__image-container,.header-logo__image{{display:none;}}
 
+/* ── header-menu ── */
 .header-menu,.header-menu__inner{{height:100%;display:flex;align-items:center;}}
 nav.menu-list{{display:flex;height:100%;}}
 .overflow-menu,.menu-list__list{{
@@ -243,6 +249,7 @@ nav.menu-list{{display:flex;height:100%;}}
   opacity:1 !important;
 }}
 
+/* ── header-actions ── */
 header-actions{{
   display:flex;
   margin-inline-start:calc(-1 * var(--gap-md));
@@ -256,6 +263,7 @@ header-actions{{
 .header-actions__action svg{{display:block;stroke-width:var(--icon-stroke-width);}}
 .account-button__icon{{width:15px;height:17px;}}
 
+/* cart bubble */
 .header-actions__cart-icon{{position:relative;}}
 .cart-bubble{{
   position:absolute;
@@ -268,6 +276,7 @@ header-actions{{
 }}
 .cart-bubble.visible{{display:flex;}}
 
+/* ── hamburger ── */
 .header__icon--menu{{
   display:none;background:none;border:none;cursor:pointer;
   color:var(--color-foreground);padding:var(--padding-lg);
@@ -282,6 +291,7 @@ header-actions{{
   header-actions{{justify-self:flex-end;}}
 }}
 
+/* ── drawer backdrop ── */
 .menu-drawer__backdrop{{
   position:fixed;top:0;left:0;width:100vw;height:100dvh;
   backdrop-filter:brightness(0.75);
@@ -291,6 +301,7 @@ header-actions{{
 }}
 .menu-drawer__backdrop.open{{opacity:1;pointer-events:auto;}}
 
+/* ── drawer panel ── */
 .menu-drawer{{
   position:fixed;transform:translateX(-100%);visibility:hidden;
   top:0;left:0;
@@ -375,6 +386,7 @@ NAV_HTML = """
           <line x1="2" y1="15" x2="18" y2="15"/>
         </svg>
       </button>
+      <!-- logo.liquid text fallback: shop.name when no logo image set -->
       <a href="https://supportrd.com" class="header-logo" aria-label="SupportRD">
         <span class="header-logo__image-container header-logo__image-container--original" data-testid="header-logo">
           <img src="https://cdn.shopify.com/s/files/1/0593/2715/2208/files/woman-waking-up.jpg?v=1771636828" alt="SupportRD" class="header-logo__image">
