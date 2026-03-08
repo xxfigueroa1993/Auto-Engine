@@ -386,7 +386,7 @@ def parse_content(raw):
     }
 
 
-BLOG_DB = "/tmp/srd_blog.db"
+BLOG_DB = "/data/srd_blog.db"
 
 def _init_blog_db():
     import sqlite3
