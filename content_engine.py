@@ -35,19 +35,39 @@ SEED_TOPICS = [
     "hair loss treatment at home",
     "curly hair moisture routine",
     "how to grow hair faster",
-    "scalp treatment for hair loss",
     "deep conditioning routine",
     "frizzy hair solutions",
-    "hair care routine for dry hair",
+    "best oils for hair growth",
     "how to repair bleached hair",
     "relaxed hair care tips",
-    "hair thinning solutions women",
-    "best hair growth serum",
-    "how to get shiny hair naturally",
-    "dandruff treatment home remedy",
-    "hair breakage causes and treatment",
     "postpartum hair loss solutions",
     "protein treatment for hair",
+    "natural ingredients for hair growth",
+    "how to moisturize dry natural hair",
+    "why is my hair falling out",
+    "hair porosity explained",
+    "how to detangle matted hair",
+    "Caribbean hair care secrets",
+    "rosemary oil for hair growth",
+    "aloe vera benefits for hair",
+    "how to strengthen weak hair",
+    "overnight hair mask recipes",
+    "why hair stops growing",
+    "heat damage repair for hair",
+    "best shampoo for hair loss",
+    "onion juice for hair regrowth",
+    "how to get thicker hair naturally",
+    "split ends treatment at home",
+    "hair care routine for mixed hair",
+    "how to reduce hair shedding",
+    "biotin for hair growth does it work",
+    "co-washing natural hair guide",
+    "how to revive dull lifeless hair",
+    "hair growth stages explained",
+    "why does my hair break off",
+    "Dominican blowout at home",
+    "ayurvedic hair care routine",
+    "how to seal moisture in natural hair",
 ]
 
 REDDIT_COMMUNITIES = ["Hair","Haircare","BlackHair","curlyhair","FancyFollicles","NaturalHair"]
@@ -252,7 +272,7 @@ def get_todays_topic():
                 return trend
         except Exception as e:
             print(f"{name} error: {e}")
-    topic = SEED_TOPICS[day % len(SEED_TOPICS)]
+    topic = random.choice(SEED_TOPICS)
     print(f"Using seed topic: {topic}")
     return topic
 
